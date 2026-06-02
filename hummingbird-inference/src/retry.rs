@@ -16,7 +16,10 @@ pub struct RetryClient<C: InferenceClient> {
 
 impl<C: InferenceClient> RetryClient<C> {
     pub fn new(inner: C) -> Self {
-        Self { inner, max_retries: MAX_RETRIES }
+        Self {
+            inner,
+            max_retries: MAX_RETRIES,
+        }
     }
 
     pub fn with_retries(inner: C, max_retries: u32) -> Self {
@@ -26,8 +29,11 @@ impl<C: InferenceClient> RetryClient<C> {
     fn is_retryable(err: &HummingbirdError) -> bool {
         match err {
             HummingbirdError::Inference(msg) => {
-                msg.contains("429") || msg.contains("500") || msg.contains("502")
-                    || msg.contains("503") || msg.contains("504")
+                msg.contains("429")
+                    || msg.contains("500")
+                    || msg.contains("502")
+                    || msg.contains("503")
+                    || msg.contains("504")
             }
             HummingbirdError::Network(_) => true,
             _ => false,
@@ -83,18 +89,19 @@ impl RateLimiter {
 
     pub async fn acquire(&self) {
         loop {
-            let now = Instant::now();
-            let window = Duration::from_secs(60);
-            let mut stamps = self.timestamps.lock().unwrap();
-            stamps.retain(|t| now.duration_since(*t) < window);
-            if stamps.len() < self.requests_per_minute as usize {
-                stamps.push(now);
-                return;
-            }
-            // oldest stamp + window gives next available slot
-            let oldest = stamps[0];
-            let wait = (oldest + window).saturating_duration_since(now);
-            drop(stamps);
+            let wait = {
+                let now = Instant::now();
+                let window = Duration::from_secs(60);
+                let mut stamps = self.timestamps.lock().unwrap();
+                stamps.retain(|t| now.duration_since(*t) < window);
+                if stamps.len() < self.requests_per_minute as usize {
+                    stamps.push(now);
+                    return;
+                }
+                let oldest = stamps[0];
+                (oldest + window).saturating_duration_since(now)
+                // MutexGuard dropped here as block ends — before any await
+            };
             tokio::time::sleep(wait + Duration::from_millis(10)).await;
         }
     }
@@ -108,13 +115,21 @@ pub fn estimate_tokens(text: &str) -> usize {
 }
 
 pub fn estimate_request_tokens(request: &InferenceRequest) -> usize {
-    request.messages.iter().map(|m| estimate_tokens(&m.content) + 4).sum::<usize>() + 3
+    request
+        .messages
+        .iter()
+        .map(|m| estimate_tokens(&m.content) + 4)
+        .sum::<usize>()
+        + 3
 }
 
 pub fn check_context_window(request: &InferenceRequest, limit: usize) -> Result<()> {
     let tokens = estimate_request_tokens(request);
     if tokens > limit {
-        return Err(HummingbirdError::TokenLimitExceeded { requested: tokens, limit });
+        return Err(HummingbirdError::TokenLimitExceeded {
+            requested: tokens,
+            limit,
+        });
     }
     Ok(())
 }
@@ -126,7 +141,10 @@ mod tests {
 
     fn make_request(content: &str) -> InferenceRequest {
         InferenceRequest::new(
-            vec![Message { role: "user".into(), content: content.into() }],
+            vec![Message {
+                role: "user".into(),
+                content: content.into(),
+            }],
             "test-model",
         )
     }
@@ -158,7 +176,9 @@ mod tests {
     #[test]
     fn is_retryable_on_429() {
         let err = HummingbirdError::Inference("OpenAI 429: rate limited".to_string());
-        assert!(RetryClient::<crate::providers::OllamaClient>::is_retryable(&err));
+        assert!(RetryClient::<crate::providers::OllamaClient>::is_retryable(
+            &err
+        ));
     }
 
     #[test]

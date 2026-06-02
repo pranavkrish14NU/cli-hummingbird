@@ -9,7 +9,9 @@ pub struct WriteFile;
 
 #[async_trait]
 impl Tool for WriteFile {
-    fn name(&self) -> &str { "write_file" }
+    fn name(&self) -> &str {
+        "write_file"
+    }
 
     fn description(&self) -> &str {
         "Write content to a file, creating parent directories as needed. Requires explicit confirmation before overwriting."
@@ -27,9 +29,11 @@ impl Tool for WriteFile {
     }
 
     async fn execute(&self, params: Value) -> Result<ToolResult> {
-        let path = params["path"].as_str()
+        let path = params["path"]
+            .as_str()
             .ok_or_else(|| HummingbirdError::Tool("missing 'path' parameter".into()))?;
-        let content = params["content"].as_str()
+        let content = params["content"]
+            .as_str()
             .ok_or_else(|| HummingbirdError::Tool("missing 'content' parameter".into()))?;
 
         let p = Path::new(path);
@@ -40,7 +44,10 @@ impl Tool for WriteFile {
         }
 
         std::fs::write(p, content).map_err(HummingbirdError::Io)?;
-        Ok(ToolResult::ok(format!("Written {} bytes to '{path}'", content.len())))
+        Ok(ToolResult::ok(format!(
+            "Written {} bytes to '{path}'",
+            content.len()
+        )))
     }
 }
 
@@ -53,10 +60,13 @@ mod tests {
     async fn writes_file_and_creates_dirs() {
         let dir = TempDir::new().unwrap();
         let p = dir.path().join("sub").join("file.txt");
-        let result = WriteFile.execute(json!({
-            "path": p.to_str().unwrap(),
-            "content": "hello"
-        })).await.unwrap();
+        let result = WriteFile
+            .execute(json!({
+                "path": p.to_str().unwrap(),
+                "content": "hello"
+            }))
+            .await
+            .unwrap();
         assert!(!result.is_error);
         assert_eq!(std::fs::read_to_string(&p).unwrap(), "hello");
     }

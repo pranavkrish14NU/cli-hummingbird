@@ -8,7 +8,9 @@ pub struct ListDirectory;
 
 #[async_trait]
 impl Tool for ListDirectory {
-    fn name(&self) -> &str { "list_directory" }
+    fn name(&self) -> &str {
+        "list_directory"
+    }
 
     fn description(&self) -> &str {
         "List files and directories at the given path."
@@ -25,7 +27,8 @@ impl Tool for ListDirectory {
     }
 
     async fn execute(&self, params: Value) -> Result<ToolResult> {
-        let path = params["path"].as_str()
+        let path = params["path"]
+            .as_str()
             .ok_or_else(|| HummingbirdError::Tool("missing 'path' parameter".into()))?;
 
         let entries = match std::fs::read_dir(path) {
@@ -61,7 +64,10 @@ mod tests {
         let dir = TempDir::new().unwrap();
         fs::write(dir.path().join("a.txt"), "").unwrap();
         fs::write(dir.path().join("b.txt"), "").unwrap();
-        let result = ListDirectory.execute(json!({"path": dir.path().to_str().unwrap()})).await.unwrap();
+        let result = ListDirectory
+            .execute(json!({"path": dir.path().to_str().unwrap()}))
+            .await
+            .unwrap();
         assert!(!result.is_error);
         assert!(result.output.contains("a.txt"));
         assert!(result.output.contains("b.txt"));
@@ -69,7 +75,10 @@ mod tests {
 
     #[tokio::test]
     async fn returns_error_for_missing_dir() {
-        let result = ListDirectory.execute(json!({"path": "/nonexistent/dir"})).await.unwrap();
+        let result = ListDirectory
+            .execute(json!({"path": "/nonexistent/dir"}))
+            .await
+            .unwrap();
         assert!(result.is_error);
     }
 }

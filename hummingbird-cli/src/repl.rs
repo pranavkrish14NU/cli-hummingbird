@@ -22,14 +22,18 @@ impl Repl {
         let stdin = io::stdin();
         let _forge = ForgeEngine::new(&self.workspace);
 
-        println!("Hummingbird REPL — type /quit to exit, /history to review, /undo to revert last edit.");
+        println!(
+            "Hummingbird REPL — type /quit to exit, /history to review, /undo to revert last edit."
+        );
 
         loop {
             print!("hb> ");
             io::stdout().flush().ok();
 
             let mut line = String::new();
-            if stdin.lock().read_line(&mut line).is_err() { break; }
+            if stdin.lock().read_line(&mut line).is_err() {
+                break;
+            }
             let trimmed = line.trim();
 
             match trimmed {
@@ -38,7 +42,10 @@ impl Repl {
                     break;
                 }
                 "/history" => {
-                    println!("--- Conversation History ({} messages) ---", self.history.len());
+                    println!(
+                        "--- Conversation History ({} messages) ---",
+                        self.history.len()
+                    );
                     for (i, msg) in self.history.as_messages().iter().enumerate() {
                         let preview = msg.content.chars().take(80).collect::<String>();
                         println!("[{i}] {}: {preview}...", msg.role);

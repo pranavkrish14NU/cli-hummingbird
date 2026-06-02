@@ -13,7 +13,10 @@ pub struct OllamaClient {
 
 impl OllamaClient {
     pub fn new(base_url: impl Into<String>) -> Self {
-        Self { base_url: base_url.into(), http: reqwest::Client::new() }
+        Self {
+            base_url: base_url.into(),
+            http: reqwest::Client::new(),
+        }
     }
 
     pub fn default_local() -> Self {
@@ -79,10 +82,14 @@ impl InferenceClient for OllamaClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let text = resp.text().await.unwrap_or_default();
-            return Err(HummingbirdError::Inference(format!("Ollama {status}: {text}")));
+            return Err(HummingbirdError::Inference(format!(
+                "Ollama {status}: {text}"
+            )));
         }
 
-        let data: OllamaResponse = resp.json().await
+        let data: OllamaResponse = resp
+            .json()
+            .await
             .map_err(|e| HummingbirdError::Inference(e.to_string()))?;
 
         Ok(InferenceResponse {
@@ -127,18 +134,29 @@ impl InferenceClient for OllamaClient {
             let bytes = chunk.map_err(|e| HummingbirdError::Network(e.to_string()))?;
             let text = String::from_utf8_lossy(&bytes);
             for line in text.lines() {
-                if line.is_empty() { continue; }
+                if line.is_empty() {
+                    continue;
+                }
                 if let Ok(data) = serde_json::from_str::<OllamaResponse>(line) {
                     let done = data.done;
-                    let _ = tx.send(Ok(StreamToken { text: data.message.content, done })).await;
-                    if done { return Ok(()); }
+                    let _ = tx
+                        .send(Ok(StreamToken {
+                            text: data.message.content,
+                            done,
+                        }))
+                        .await;
+                    if done {
+                        return Ok(());
+                    }
                 }
             }
         }
         Ok(())
     }
 
-    fn provider_name(&self) -> &str { "ollama" }
+    fn provider_name(&self) -> &str {
+        "ollama"
+    }
 }
 
 #[cfg(test)]

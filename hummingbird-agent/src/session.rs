@@ -1,9 +1,12 @@
 use hummingbird_common::{HummingbirdError, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::history::MessageHistory;
+
+static SESSION_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 const SESSIONS_DIR: &str = ".hummingbird/sessions";
 
@@ -20,7 +23,7 @@ impl Session {
     pub fn new(summary: impl Into<String>) -> Self {
         let now = unix_now();
         Self {
-            id: format!("{now:x}"),
+            id: unique_id(),
             created_at: now,
             updated_at: now,
             summary: summary.into(),
@@ -45,7 +48,9 @@ impl Session {
 
     pub fn list(workspace: &Path) -> Result<Vec<SessionMeta>> {
         let dir = workspace.join(SESSIONS_DIR);
-        if !dir.exists() { return Ok(vec![]); }
+        if !dir.exists() {
+            return Ok(vec![]);
+        }
         let mut metas = vec![];
         for entry in std::fs::read_dir(&dir).map_err(HummingbirdError::Io)? {
             let entry = entry.map_err(HummingbirdError::Io)?;
@@ -63,13 +68,15 @@ impl Session {
                 }
             }
         }
-        metas.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        metas.sort_by_key(|m| std::cmp::Reverse(m.created_at));
         Ok(metas)
     }
 
     pub fn prune(workspace: &Path, older_than_ms: u64) -> Result<usize> {
         let dir = workspace.join(SESSIONS_DIR);
-        if !dir.exists() { return Ok(0); }
+        if !dir.exists() {
+            return Ok(0);
+        }
         let cutoff = unix_now().saturating_sub(older_than_ms);
         let mut pruned = 0;
         for entry in std::fs::read_dir(&dir).map_err(HummingbirdError::Io)? {
@@ -99,7 +106,16 @@ pub struct SessionMeta {
 }
 
 fn unix_now() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+fn unique_id() -> String {
+    let ts = unix_now();
+    let seq = SESSION_COUNTER.fetch_add(1, Ordering::SeqCst);
+    format!("{ts:016x}{seq:04x}")
 }
 
 #[cfg(test)]

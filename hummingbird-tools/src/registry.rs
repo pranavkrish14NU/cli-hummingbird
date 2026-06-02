@@ -9,7 +9,9 @@ pub struct ToolRegistry {
 
 impl ToolRegistry {
     pub fn new() -> Self {
-        Self { tools: HashMap::new() }
+        Self {
+            tools: HashMap::new(),
+        }
     }
 
     pub fn register(&mut self, tool: impl Tool + 'static) {
@@ -25,14 +27,21 @@ impl ToolRegistry {
     }
 
     pub fn schemas(&self) -> Vec<serde_json::Value> {
-        self.tools.values().map(|t| serde_json::json!({
-            "name": t.name(),
-            "description": t.description(),
-            "parameters": t.parameters_schema(),
-        })).collect()
+        self.tools
+            .values()
+            .map(|t| {
+                serde_json::json!({
+                    "name": t.name(),
+                    "description": t.description(),
+                    "parameters": t.parameters_schema(),
+                })
+            })
+            .collect()
     }
 }
 
 impl Default for ToolRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

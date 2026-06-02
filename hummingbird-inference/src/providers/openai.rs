@@ -96,10 +96,14 @@ impl InferenceClient for OpenAiClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let text = resp.text().await.unwrap_or_default();
-            return Err(HummingbirdError::Inference(format!("OpenAI {status}: {text}")));
+            return Err(HummingbirdError::Inference(format!(
+                "OpenAI {status}: {text}"
+            )));
         }
 
-        let data: OpenAiResponse = resp.json().await
+        let data: OpenAiResponse = resp
+            .json()
+            .await
             .map_err(|e| HummingbirdError::Inference(e.to_string()))?;
 
         let content = data
@@ -154,15 +158,31 @@ impl InferenceClient for OpenAiClient {
             for line in text.lines() {
                 let line = line.trim_start_matches("data: ");
                 if line == "[DONE]" {
-                    let _ = tx.send(Ok(StreamToken { text: String::new(), done: true })).await;
+                    let _ = tx
+                        .send(Ok(StreamToken {
+                            text: String::new(),
+                            done: true,
+                        }))
+                        .await;
                     return Ok(());
                 }
-                if line.is_empty() { continue; }
+                if line.is_empty() {
+                    continue;
+                }
                 if let Ok(data) = serde_json::from_str::<OpenAiResponse>(line) {
-                    if let Some(delta_text) = data.choices.into_iter()
-                        .next().and_then(|c| c.delta).and_then(|d| d.content)
+                    if let Some(delta_text) = data
+                        .choices
+                        .into_iter()
+                        .next()
+                        .and_then(|c| c.delta)
+                        .and_then(|d| d.content)
                     {
-                        let _ = tx.send(Ok(StreamToken { text: delta_text, done: false })).await;
+                        let _ = tx
+                            .send(Ok(StreamToken {
+                                text: delta_text,
+                                done: false,
+                            }))
+                            .await;
                     }
                 }
             }
@@ -170,7 +190,9 @@ impl InferenceClient for OpenAiClient {
         Ok(())
     }
 
-    fn provider_name(&self) -> &str { "openai" }
+    fn provider_name(&self) -> &str {
+        "openai"
+    }
 }
 
 #[cfg(test)]
@@ -178,6 +200,7 @@ mod tests {
     use super::*;
     use crate::client::Message;
 
+    #[allow(dead_code)]
     fn mock_client(base_url: &str) -> OpenAiClient {
         OpenAiClient::with_base_url("test-key", base_url)
     }
@@ -197,7 +220,10 @@ mod tests {
     #[test]
     fn inference_request_defaults() {
         let req = InferenceRequest::new(
-            vec![Message { role: "user".into(), content: "hello".into() }],
+            vec![Message {
+                role: "user".into(),
+                content: "hello".into(),
+            }],
             "gpt-4o",
         );
         assert_eq!(req.max_tokens, 4096);

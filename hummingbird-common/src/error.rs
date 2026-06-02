@@ -41,7 +41,10 @@ mod tests {
 
     #[test]
     fn io_error_display() {
-        let err = HummingbirdError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"));
+        let err = HummingbirdError::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "file not found",
+        ));
         assert!(err.to_string().contains("IO error"));
     }
 
@@ -59,7 +62,10 @@ mod tests {
 
     #[test]
     fn token_limit_error_display() {
-        let err = HummingbirdError::TokenLimitExceeded { requested: 8000, limit: 4096 };
+        let err = HummingbirdError::TokenLimitExceeded {
+            requested: 8000,
+            limit: 4096,
+        };
         assert!(err.to_string().contains("8000"));
         assert!(err.to_string().contains("4096"));
     }

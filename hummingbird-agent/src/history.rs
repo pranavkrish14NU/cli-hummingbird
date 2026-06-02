@@ -7,14 +7,22 @@ pub struct MessageHistory {
 }
 
 impl MessageHistory {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn push_user(&mut self, content: impl Into<String>) {
-        self.messages.push(Message { role: "user".into(), content: content.into() });
+        self.messages.push(Message {
+            role: "user".into(),
+            content: content.into(),
+        });
     }
 
     pub fn push_assistant(&mut self, content: impl Into<String>) {
-        self.messages.push(Message { role: "assistant".into(), content: content.into() });
+        self.messages.push(Message {
+            role: "assistant".into(),
+            content: content.into(),
+        });
     }
 
     pub fn push_tool_result(&mut self, tool_name: &str, result: &str) {
@@ -28,6 +36,10 @@ impl MessageHistory {
         &self.messages
     }
 
-    pub fn len(&self) -> usize { self.messages.len() }
-    pub fn is_empty(&self) -> bool { self.messages.is_empty() }
+    pub fn len(&self) -> usize {
+        self.messages.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.messages.is_empty()
+    }
 }

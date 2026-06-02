@@ -49,10 +49,13 @@ impl Agent {
 
             // Prepend system prompt as first user message if set
             if let Some(sys) = &self.system_prompt {
-                messages.insert(0, hummingbird_inference::client::Message {
-                    role: "system".into(),
-                    content: sys.clone(),
-                });
+                messages.insert(
+                    0,
+                    hummingbird_inference::client::Message {
+                        role: "system".into(),
+                        content: sys.clone(),
+                    },
+                );
             }
 
             let request = InferenceRequest {
@@ -99,15 +102,15 @@ impl Agent {
         // Support both OpenAI function_call JSON and simple <tool> XML-like markers
         // Try JSON first
         if let Ok(v) = serde_json::from_str::<Value>(content) {
-            if let (Some(name), Some(args)) = (
-                v["name"].as_str(),
-                v.get("arguments"),
-            ) {
+            if let (Some(name), Some(args)) = (v["name"].as_str(), v.get("arguments")) {
                 let params = match args {
                     Value::String(s) => serde_json::from_str(s).unwrap_or(Value::Null),
                     other => other.clone(),
                 };
-                return Some(ToolCall { name: name.to_string(), params });
+                return Some(ToolCall {
+                    name: name.to_string(),
+                    params,
+                });
             }
         }
 
@@ -118,7 +121,10 @@ impl Agent {
                 if let Ok(v) = serde_json::from_str::<Value>(inner.trim()) {
                     if let Some(name) = v["name"].as_str() {
                         let params = v["arguments"].clone();
-                        return Some(ToolCall { name: name.to_string(), params });
+                        return Some(ToolCall {
+                            name: name.to_string(),
+                            params,
+                        });
                     }
                 }
             }
@@ -128,9 +134,10 @@ impl Agent {
     }
 
     async fn execute_tool_call(&self, call: &ToolCall) -> Result<hummingbird_tools::ToolResult> {
-        let tool = self.tools.get(&call.name).ok_or_else(|| {
-            HummingbirdError::Tool(format!("Unknown tool: {}", call.name))
-        })?;
+        let tool = self
+            .tools
+            .get(&call.name)
+            .ok_or_else(|| HummingbirdError::Tool(format!("Unknown tool: {}", call.name)))?;
         tool.execute(call.params.clone()).await
     }
 }
@@ -154,7 +161,9 @@ mod tests {
 
     impl MockClient {
         fn new(responses: Vec<&str>) -> Self {
-            Self { responses: std::sync::Mutex::new(responses.into_iter().map(String::from).collect()) }
+            Self {
+                responses: std::sync::Mutex::new(responses.into_iter().map(String::from).collect()),
+            }
         }
     }
 
@@ -167,14 +176,25 @@ mod tests {
             } else {
                 responses.remove(0)
             };
-            Ok(InferenceResponse { content, model: "mock".into(), prompt_tokens: None, completion_tokens: None })
+            Ok(InferenceResponse {
+                content,
+                model: "mock".into(),
+                prompt_tokens: None,
+                completion_tokens: None,
+            })
         }
 
-        async fn stream_message(&self, _req: InferenceRequest, _tx: mpsc::Sender<Result<StreamToken>>) -> Result<()> {
+        async fn stream_message(
+            &self,
+            _req: InferenceRequest,
+            _tx: mpsc::Sender<Result<StreamToken>>,
+        ) -> Result<()> {
             Ok(())
         }
 
-        fn provider_name(&self) -> &str { "mock" }
+        fn provider_name(&self) -> &str {
+            "mock"
+        }
     }
 
     fn make_agent(responses: Vec<&str>) -> Agent {
@@ -195,7 +215,8 @@ mod tests {
 
     #[tokio::test]
     async fn single_tool_use_then_final_response() {
-        let tool_call_json = r#"<tool_call>{"name":"read_file","arguments":{"path":"/tmp/x"}}</tool_call>"#;
+        let tool_call_json =
+            r#"<tool_call>{"name":"read_file","arguments":{"path":"/tmp/x"}}</tool_call>"#;
         let agent = make_agent(vec![tool_call_json, "File content processed."]);
         let result = agent.run("Read /tmp/x").await.unwrap();
         assert_eq!(result.final_response, "File content processed.");
@@ -214,9 +235,7 @@ mod tests {
     #[tokio::test]
     async fn max_iteration_stop() {
         // All responses are tool calls — should hit max_iterations
-        let calls: Vec<&str> = vec![
-            r#"<tool_call>{"name":"x","arguments":{}}</tool_call>"#; 15
-        ];
+        let calls: Vec<&str> = vec![r#"<tool_call>{"name":"x","arguments":{}}</tool_call>"#; 15];
         let mut agent = make_agent(calls);
         agent.max_iterations = 3;
         let result = agent.run("Loop forever").await;

@@ -43,9 +43,7 @@ impl ProjectContextConfig {
             max_file_size_bytes: cli_max_size
                 .or(self.max_file_size_bytes)
                 .unwrap_or(1_048_576),
-            max_total_tokens: cli_max_tokens
-                .or(self.max_total_tokens)
-                .unwrap_or(64_000),
+            max_total_tokens: cli_max_tokens.or(self.max_total_tokens).unwrap_or(64_000),
         }
     }
 }
@@ -99,12 +97,7 @@ max_file_size_bytes = 512000
             max_file_size_bytes: Some(100),
             max_total_tokens: None,
         };
-        let resolved = cfg.merge_with_cli(
-            Some(vec!["**/*.py".to_string()]),
-            None,
-            None,
-            None,
-        );
+        let resolved = cfg.merge_with_cli(Some(vec!["**/*.py".to_string()]), None, None, None);
         assert_eq!(resolved.include, vec!["**/*.py".to_string()]);
         assert_eq!(resolved.max_file_size_bytes, 100); // from file since CLI is None
     }

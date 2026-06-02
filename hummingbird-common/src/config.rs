@@ -88,6 +88,9 @@ mod tests {
         let toml_str = toml::to_string(&cfg).unwrap();
         let restored: GlobalConfig = toml::from_str(&toml_str).unwrap();
         assert_eq!(restored.model.provider, cfg.model.provider);
-        assert_eq!(restored.context.max_total_tokens, cfg.context.max_total_tokens);
+        assert_eq!(
+            restored.context.max_total_tokens,
+            cfg.context.max_total_tokens
+        );
     }
 }

@@ -16,8 +16,21 @@ async fn main() {
     let global = load_config(&workspace);
 
     let result = match cli.command {
-        Commands::Run { prompt, model, provider, max_iterations, stream } => {
-            let cfg = RunConfig { prompt, model, provider, max_iterations, stream, workspace };
+        Commands::Run {
+            prompt,
+            model,
+            provider,
+            max_iterations,
+            stream,
+        } => {
+            let cfg = RunConfig {
+                prompt,
+                model,
+                provider,
+                max_iterations,
+                stream,
+                workspace,
+            };
             match runner::run_agent(cfg, &global).await {
                 Ok(result) => {
                     println!("{}", result.final_response);
@@ -27,9 +40,14 @@ async fn main() {
             }
         }
 
-        Commands::Chat { session: session_id, model } => {
+        Commands::Chat {
+            session: session_id,
+            model,
+        } => {
             use hummingbird_inference::OllamaClient;
-            use hummingbird_tools::{ListDirectory, ReadFile, SearchFiles, ShellExec, ToolRegistry, WriteFile};
+            use hummingbird_tools::{
+                ListDirectory, ReadFile, SearchFiles, ShellExec, ToolRegistry, WriteFile,
+            };
             use std::sync::Arc;
 
             let ws = workspace.to_string_lossy().to_string();
@@ -42,7 +60,11 @@ async fn main() {
 
             let m = model.unwrap_or_else(|| global.model.model_name.clone());
             let client = Arc::new(OllamaClient::new(
-                global.model.base_url.clone().unwrap_or_else(|| "http://localhost:11434".into())
+                global
+                    .model
+                    .base_url
+                    .clone()
+                    .unwrap_or_else(|| "http://localhost:11434".into()),
             ));
             let agent = hummingbird_agent::Agent::new(client, Arc::new(registry), m);
             let mut r = repl::Repl::new(agent, &ws);
@@ -57,48 +79,44 @@ async fn main() {
             r.run().await
         }
 
-        Commands::Session { action } => {
-            match action {
-                SessionAction::List => {
-                    match Session::list(&workspace) {
-                        Ok(sessions) => {
-                            if sessions.is_empty() {
-                                println!("No sessions found.");
-                            } else {
-                                for s in sessions {
-                                    println!("{} | {} messages | {}", s.id, s.message_count, s.summary);
-                                }
-                            }
-                            Ok(())
+        Commands::Session { action } => match action {
+            SessionAction::List => match Session::list(&workspace) {
+                Ok(sessions) => {
+                    if sessions.is_empty() {
+                        println!("No sessions found.");
+                    } else {
+                        for s in sessions {
+                            println!("{} | {} messages | {}", s.id, s.message_count, s.summary);
                         }
-                        Err(e) => Err(e),
                     }
-                }
-                SessionAction::Resume { id } => {
-                    println!("Resuming session {id} — use `hummingbird chat --session {id}`");
                     Ok(())
                 }
-                SessionAction::Delete { id } => {
-                    let path = workspace.join(".hummingbird/sessions").join(format!("{id}.json"));
-                    std::fs::remove_file(&path)
-                        .map_err(hummingbird_common::HummingbirdError::Io)
-                        .map(|_| println!("Session {id} deleted."))
-                }
+                Err(e) => Err(e),
+            },
+            SessionAction::Resume { id } => {
+                println!("Resuming session {id} — use `hummingbird chat --session {id}`");
+                Ok(())
             }
-        }
+            SessionAction::Delete { id } => {
+                let path = workspace
+                    .join(".hummingbird/sessions")
+                    .join(format!("{id}.json"));
+                std::fs::remove_file(&path)
+                    .map_err(hummingbird_common::HummingbirdError::Io)
+                    .map(|_| println!("Session {id} deleted."))
+            }
+        },
 
-        Commands::Config { action } => {
-            match action {
-                ConfigAction::Show => {
-                    println!("{}", toml::to_string_pretty(&global).unwrap_or_default());
-                    Ok(())
-                }
-                ConfigAction::Set { key, value } => {
-                    println!("Config set {key}={value} (persisting to .hummingbird.toml)");
-                    Ok(())
-                }
+        Commands::Config { action } => match action {
+            ConfigAction::Show => {
+                println!("{}", toml::to_string_pretty(&global).unwrap_or_default());
+                Ok(())
             }
-        }
+            ConfigAction::Set { key, value } => {
+                println!("Config set {key}={value} (persisting to .hummingbird.toml)");
+                Ok(())
+            }
+        },
 
         Commands::Init => {
             let path = workspace.join(".hummingbird.toml");
@@ -120,7 +138,7 @@ async fn main() {
     }
 }
 
-fn load_config(workspace: &PathBuf) -> GlobalConfig {
+fn load_config(workspace: &std::path::Path) -> GlobalConfig {
     let path = workspace.join(".hummingbird.toml");
     if let Ok(content) = std::fs::read_to_string(&path) {
         if let Ok(cfg) = toml::from_str(&content) {

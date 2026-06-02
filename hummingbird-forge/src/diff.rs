@@ -2,17 +2,20 @@
 // Additional diff formatting helpers can be added here.
 
 pub fn colorize_diff(diff: &str) -> String {
-    diff.lines().map(|line| {
-        if line.starts_with('+') && !line.starts_with("+++") {
-            format!("\x1b[32m{line}\x1b[0m") // green
-        } else if line.starts_with('-') && !line.starts_with("---") {
-            format!("\x1b[31m{line}\x1b[0m") // red
-        } else if line.starts_with("@@") {
-            format!("\x1b[36m{line}\x1b[0m") // cyan
-        } else {
-            line.to_string()
-        }
-    }).collect::<Vec<_>>().join("\n")
+    diff.lines()
+        .map(|line| {
+            if line.starts_with('+') && !line.starts_with("+++") {
+                format!("\x1b[32m{line}\x1b[0m") // green
+            } else if line.starts_with('-') && !line.starts_with("---") {
+                format!("\x1b[31m{line}\x1b[0m") // red
+            } else if line.starts_with("@@") {
+                format!("\x1b[36m{line}\x1b[0m") // cyan
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]

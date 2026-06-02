@@ -40,13 +40,18 @@ impl ShellExec {
     fn is_blocked(&self, cmd: &str) -> bool {
         let lower = cmd.trim().to_lowercase();
         BLOCKED_PREFIXES.iter().any(|b| lower.starts_with(b))
-            || self.blocked_commands.iter().any(|b| lower.starts_with(b.as_str()))
+            || self
+                .blocked_commands
+                .iter()
+                .any(|b| lower.starts_with(b.as_str()))
     }
 }
 
 #[async_trait]
 impl Tool for ShellExec {
-    fn name(&self) -> &str { "shell_exec" }
+    fn name(&self) -> &str {
+        "shell_exec"
+    }
 
     fn description(&self) -> &str {
         "Execute a shell command in the workspace directory. Dangerous commands are blocked."
@@ -64,11 +69,14 @@ impl Tool for ShellExec {
     }
 
     async fn execute(&self, params: Value) -> Result<ToolResult> {
-        let command = params["command"].as_str()
+        let command = params["command"]
+            .as_str()
             .ok_or_else(|| HummingbirdError::Tool("missing 'command' parameter".into()))?;
 
         if self.is_blocked(command) {
-            return Ok(ToolResult::err(format!("Command blocked by security policy: '{command}'")));
+            return Ok(ToolResult::err(format!(
+                "Command blocked by security policy: '{command}'"
+            )));
         }
 
         let timeout_secs = params["timeout_secs"].as_u64().unwrap_or(self.timeout_secs);
@@ -104,7 +112,9 @@ impl Tool for ShellExec {
                 }
             }
             Ok(Err(e)) => Ok(ToolResult::err(format!("Failed to spawn process: {e}"))),
-            Err(_) => Ok(ToolResult::err(format!("Command timed out after {timeout_secs}s"))),
+            Err(_) => Ok(ToolResult::err(format!(
+                "Command timed out after {timeout_secs}s"
+            ))),
         }
     }
 }
@@ -119,7 +129,10 @@ mod tests {
 
     #[tokio::test]
     async fn blocks_dangerous_commands() {
-        let result = shell().execute(json!({"command": "rm -rf /etc"})).await.unwrap();
+        let result = shell()
+            .execute(json!({"command": "rm -rf /etc"}))
+            .await
+            .unwrap();
         assert!(result.is_error);
         assert!(result.output.contains("blocked"));
     }
@@ -131,16 +144,25 @@ mod tests {
             timeout_secs: 5,
             blocked_commands: vec!["sudo".into()],
         };
-        let result = s.execute(json!({"command": "sudo rm -rf /"})).await.unwrap();
+        let result = s
+            .execute(json!({"command": "sudo rm -rf /"}))
+            .await
+            .unwrap();
         assert!(result.is_error);
     }
 
     #[tokio::test]
     async fn captures_stdout_and_stderr() {
         #[cfg(unix)]
-        let result = shell().execute(json!({"command": "echo hello"})).await.unwrap();
+        let result = shell()
+            .execute(json!({"command": "echo hello"}))
+            .await
+            .unwrap();
         #[cfg(windows)]
-        let result = shell().execute(json!({"command": "echo hello"})).await.unwrap();
+        let result = shell()
+            .execute(json!({"command": "echo hello"}))
+            .await
+            .unwrap();
         assert!(!result.is_error);
         assert!(result.output.contains("hello"));
     }
@@ -148,9 +170,15 @@ mod tests {
     #[tokio::test]
     async fn times_out_slow_commands() {
         #[cfg(unix)]
-        let result = shell().execute(json!({"command": "sleep 10", "timeout_secs": 1})).await.unwrap();
+        let result = shell()
+            .execute(json!({"command": "sleep 10", "timeout_secs": 1}))
+            .await
+            .unwrap();
         #[cfg(windows)]
-        let result = shell().execute(json!({"command": "powershell -c Start-Sleep 10", "timeout_secs": 1})).await.unwrap();
+        let result = shell()
+            .execute(json!({"command": "powershell -c Start-Sleep 10", "timeout_secs": 1}))
+            .await
+            .unwrap();
         assert!(result.is_error);
         assert!(result.output.contains("timed out"));
     }

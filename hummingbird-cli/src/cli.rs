@@ -98,13 +98,24 @@ mod tests {
     #[test]
     fn cli_parses_run_with_flags() {
         let cli = Cli::try_parse_from([
-            "hummingbird", "run", "hello",
-            "--model", "qwen3:30b",
-            "--provider", "ollama",
-            "--max-iterations", "5",
-        ]).unwrap();
+            "hummingbird",
+            "run",
+            "hello",
+            "--model",
+            "qwen3:30b",
+            "--provider",
+            "ollama",
+            "--max-iterations",
+            "5",
+        ])
+        .unwrap();
         match cli.command {
-            Commands::Run { model, provider, max_iterations, .. } => {
+            Commands::Run {
+                model,
+                provider,
+                max_iterations,
+                ..
+            } => {
                 assert_eq!(model.as_deref(), Some("qwen3:30b"));
                 assert_eq!(provider.as_deref(), Some("ollama"));
                 assert_eq!(max_iterations, 5);
@@ -117,7 +128,9 @@ mod tests {
     fn cli_parses_session_list() {
         let cli = Cli::try_parse_from(["hummingbird", "session", "list"]).unwrap();
         match cli.command {
-            Commands::Session { action: SessionAction::List } => {}
+            Commands::Session {
+                action: SessionAction::List,
+            } => {}
             _ => panic!("expected session list"),
         }
     }
@@ -126,7 +139,9 @@ mod tests {
     fn cli_parses_session_resume() {
         let cli = Cli::try_parse_from(["hummingbird", "session", "resume", "abc123"]).unwrap();
         match cli.command {
-            Commands::Session { action: SessionAction::Resume { id } } => {
+            Commands::Session {
+                action: SessionAction::Resume { id },
+            } => {
                 assert_eq!(id, "abc123");
             }
             _ => panic!("expected session resume"),

@@ -1,5 +1,5 @@
-use hummingbird_common::Result;
 use hummingbird_common::HummingbirdError;
+use hummingbird_common::Result;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -34,15 +34,31 @@ impl Default for ContextGatherer {
 }
 
 impl ContextGatherer {
-    pub fn new(max_file_size: usize, include_patterns: Vec<String>, exclude_patterns: Vec<String>) -> Self {
-        Self { max_file_size, include_patterns, exclude_patterns }
+    pub fn new(
+        max_file_size: usize,
+        include_patterns: Vec<String>,
+        exclude_patterns: Vec<String>,
+    ) -> Self {
+        Self {
+            max_file_size,
+            include_patterns,
+            exclude_patterns,
+        }
     }
 
     pub fn gather(&self, root: &Path, patterns: &[String]) -> Result<ContextBundle> {
         let mut bundle = ContextBundle::default();
-        let effective_patterns = if patterns.is_empty() { &self.include_patterns } else { patterns };
+        let effective_patterns = if patterns.is_empty() {
+            &self.include_patterns
+        } else {
+            patterns
+        };
 
-        for entry in WalkDir::new(root).follow_links(false).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(root)
+            .follow_links(false)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path().to_path_buf();
             if !path.is_file() {
                 continue;
@@ -64,13 +80,15 @@ impl ContextGatherer {
             let size = metadata.len() as usize;
 
             if size > self.max_file_size {
-                eprintln!("WARN: skipping {} — exceeds {} bytes", rel_str, self.max_file_size);
+                eprintln!(
+                    "WARN: skipping {} — exceeds {} bytes",
+                    rel_str, self.max_file_size
+                );
                 bundle.skipped.push(path);
                 continue;
             }
 
-            let raw = std::fs::read(&path)
-                .map_err(|e| HummingbirdError::Io(e))?;
+            let raw = std::fs::read(&path).map_err(HummingbirdError::Io)?;
 
             if Self::is_binary(&raw) {
                 bundle.skipped.push(path);
@@ -79,14 +97,20 @@ impl ContextGatherer {
 
             let content = String::from_utf8_lossy(&raw).into_owned();
             bundle.total_bytes += size;
-            bundle.files.push(FileEntry { path, content, size_bytes: size });
+            bundle.files.push(FileEntry {
+                path,
+                content,
+                size_bytes: size,
+            });
         }
 
         Ok(bundle)
     }
 
     fn is_excluded(&self, rel: &str) -> bool {
-        self.exclude_patterns.iter().any(|p| Self::glob_match(p, rel))
+        self.exclude_patterns
+            .iter()
+            .any(|p| Self::glob_match(p, rel))
     }
 
     fn matches_patterns(&self, rel: &str, patterns: &[String]) -> bool {

@@ -21,7 +21,9 @@ pub struct ForgeEngine {
 
 impl ForgeEngine {
     pub fn new(workspace_root: impl Into<String>) -> Self {
-        Self { workspace_root: workspace_root.into() }
+        Self {
+            workspace_root: workspace_root.into(),
+        }
     }
 
     pub fn apply_edit(&self, spec: &EditSpec) -> Result<EditResult> {
@@ -39,7 +41,9 @@ impl ForgeEngine {
         let end = spec.line_end.min(lines.len());
         if start > lines.len() {
             return Err(HummingbirdError::Tool(format!(
-                "line_start {} exceeds file length {}", spec.line_start, lines.len()
+                "line_start {} exceeds file length {}",
+                spec.line_start,
+                lines.len()
             )));
         }
 
@@ -71,12 +75,15 @@ impl ForgeEngine {
         }
         std::fs::write(&path, content).map_err(HummingbirdError::Io)?;
 
-        Ok(EditResult { unified_diff, backup_path })
+        Ok(EditResult {
+            unified_diff,
+            backup_path,
+        })
     }
 
     pub fn apply_edits(&self, mut specs: Vec<EditSpec>) -> Result<Vec<EditResult>> {
         // Apply in reverse line order to preserve line numbers for earlier edits
-        specs.sort_by(|a, b| b.line_start.cmp(&a.line_start));
+        specs.sort_by_key(|s| std::cmp::Reverse(s.line_start));
         self.check_no_overlaps(&specs)?;
         specs.iter().map(|s| self.apply_edit(s)).collect()
     }
@@ -85,7 +92,9 @@ impl ForgeEngine {
         let backup = format!("{}/{path}.bak", self.workspace_root);
         let target = format!("{}/{path}", self.workspace_root);
         if !Path::new(&backup).exists() {
-            return Err(HummingbirdError::Tool(format!("No backup found for '{path}'")));
+            return Err(HummingbirdError::Tool(format!(
+                "No backup found for '{path}'"
+            )));
         }
         std::fs::copy(&backup, &target).map_err(HummingbirdError::Io)?;
         std::fs::remove_file(&backup).map_err(HummingbirdError::Io)?;
@@ -112,10 +121,19 @@ impl ForgeEngine {
 }
 
 fn build_unified_diff(path: &str, removed: &[&str], added: &[&str], start: usize) -> String {
-    let mut out = format!("--- a/{path}\n+++ b/{path}\n@@ -{},{} +{},{} @@\n",
-        start + 1, removed.len(), start + 1, added.len());
-    for line in removed { out.push_str(&format!("-{line}\n")); }
-    for line in added   { out.push_str(&format!("+{line}\n")); }
+    let mut out = format!(
+        "--- a/{path}\n+++ b/{path}\n@@ -{},{} +{},{} @@\n",
+        start + 1,
+        removed.len(),
+        start + 1,
+        added.len()
+    );
+    for line in removed {
+        out.push_str(&format!("-{line}\n"));
+    }
+    for line in added {
+        out.push_str(&format!("+{line}\n"));
+    }
     out
 }
 
@@ -132,12 +150,14 @@ mod tests {
     fn applies_single_edit() {
         let dir = TempDir::new().unwrap();
         std::fs::write(dir.path().join("src.rs"), "line1\nline2\nline3\n").unwrap();
-        let result = engine(&dir).apply_edit(&EditSpec {
-            path: "src.rs".into(),
-            line_start: 2,
-            line_end: 2,
-            new_content: "REPLACED".into(),
-        }).unwrap();
+        let result = engine(&dir)
+            .apply_edit(&EditSpec {
+                path: "src.rs".into(),
+                line_start: 2,
+                line_end: 2,
+                new_content: "REPLACED".into(),
+            })
+            .unwrap();
         let content = std::fs::read_to_string(dir.path().join("src.rs")).unwrap();
         assert!(content.contains("REPLACED"));
         assert!(!result.unified_diff.is_empty());
@@ -147,18 +167,36 @@ mod tests {
     fn creates_backup_before_modification() {
         let dir = TempDir::new().unwrap();
         std::fs::write(dir.path().join("f.rs"), "original\n").unwrap();
-        engine(&dir).apply_edit(&EditSpec {
-            path: "f.rs".into(), line_start: 1, line_end: 1, new_content: "new".into(),
-        }).unwrap();
-        assert!(dir.path().join("f.rs.bak").exists() || std::path::Path::new(&format!("{}/f.rs.bak", dir.path().display())).exists());
+        engine(&dir)
+            .apply_edit(&EditSpec {
+                path: "f.rs".into(),
+                line_start: 1,
+                line_end: 1,
+                new_content: "new".into(),
+            })
+            .unwrap();
+        assert!(
+            dir.path().join("f.rs.bak").exists()
+                || std::path::Path::new(&format!("{}/f.rs.bak", dir.path().display())).exists()
+        );
     }
 
     #[test]
     fn detects_overlapping_edits() {
         let dir = TempDir::new().unwrap();
         let err = engine(&dir).apply_edits(vec![
-            EditSpec { path: "x.rs".into(), line_start: 1, line_end: 5, new_content: "a".into() },
-            EditSpec { path: "x.rs".into(), line_start: 3, line_end: 7, new_content: "b".into() },
+            EditSpec {
+                path: "x.rs".into(),
+                line_start: 1,
+                line_end: 5,
+                new_content: "a".into(),
+            },
+            EditSpec {
+                path: "x.rs".into(),
+                line_start: 3,
+                line_end: 7,
+                new_content: "b".into(),
+            },
         ]);
         assert!(err.is_err());
     }
@@ -173,9 +211,14 @@ mod tests {
     #[test]
     fn creates_new_file_when_missing() {
         let dir = TempDir::new().unwrap();
-        engine(&dir).apply_edit(&EditSpec {
-            path: "new.rs".into(), line_start: 1, line_end: 1, new_content: "fn new() {}".into(),
-        }).unwrap();
+        engine(&dir)
+            .apply_edit(&EditSpec {
+                path: "new.rs".into(),
+                line_start: 1,
+                line_end: 1,
+                new_content: "fn new() {}".into(),
+            })
+            .unwrap();
         assert!(dir.path().join("new.rs").exists());
     }
 }

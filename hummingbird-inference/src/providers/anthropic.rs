@@ -96,10 +96,14 @@ impl InferenceClient for AnthropicClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let text = resp.text().await.unwrap_or_default();
-            return Err(HummingbirdError::Inference(format!("Anthropic {status}: {text}")));
+            return Err(HummingbirdError::Inference(format!(
+                "Anthropic {status}: {text}"
+            )));
         }
 
-        let data: AnthropicResponse = resp.json().await
+        let data: AnthropicResponse = resp
+            .json()
+            .await
             .map_err(|e| HummingbirdError::Inference(e.to_string()))?;
 
         let content = data
@@ -158,14 +162,21 @@ impl InferenceClient for AnthropicClient {
                         match event_type {
                             "content_block_delta" => {
                                 if let Some(text) = event["delta"]["text"].as_str() {
-                                    let _ = tx.send(Ok(StreamToken {
-                                        text: text.to_string(),
-                                        done: false,
-                                    })).await;
+                                    let _ = tx
+                                        .send(Ok(StreamToken {
+                                            text: text.to_string(),
+                                            done: false,
+                                        }))
+                                        .await;
                                 }
                             }
                             "message_stop" => {
-                                let _ = tx.send(Ok(StreamToken { text: String::new(), done: true })).await;
+                                let _ = tx
+                                    .send(Ok(StreamToken {
+                                        text: String::new(),
+                                        done: true,
+                                    }))
+                                    .await;
                                 return Ok(());
                             }
                             _ => {}
@@ -177,7 +188,9 @@ impl InferenceClient for AnthropicClient {
         Ok(())
     }
 
-    fn provider_name(&self) -> &str { "anthropic" }
+    fn provider_name(&self) -> &str {
+        "anthropic"
+    }
 }
 
 #[cfg(test)]
