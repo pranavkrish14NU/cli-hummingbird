@@ -2,7 +2,6 @@ use hummingbird_agent::{Agent, MessageHistory};
 use hummingbird_common::Result;
 use hummingbird_forge::ForgeEngine;
 use std::io::{self, BufRead, Write};
-use std::sync::Arc;
 
 pub struct Repl {
     pub agent: Agent,
@@ -21,7 +20,7 @@ impl Repl {
 
     pub async fn run(&mut self) -> Result<()> {
         let stdin = io::stdin();
-        let forge = ForgeEngine::new(&self.workspace);
+        let _forge = ForgeEngine::new(&self.workspace);
 
         println!("Hummingbird REPL — type /quit to exit, /history to review, /undo to revert last edit.");
 

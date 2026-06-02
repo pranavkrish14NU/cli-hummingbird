@@ -67,10 +67,10 @@ impl Session {
         Ok(metas)
     }
 
-    pub fn prune(workspace: &Path, older_than_secs: u64) -> Result<usize> {
+    pub fn prune(workspace: &Path, older_than_ms: u64) -> Result<usize> {
         let dir = workspace.join(SESSIONS_DIR);
         if !dir.exists() { return Ok(0); }
-        let cutoff = unix_now().saturating_sub(older_than_secs);
+        let cutoff = unix_now().saturating_sub(older_than_ms);
         let mut pruned = 0;
         for entry in std::fs::read_dir(&dir).map_err(HummingbirdError::Io)? {
             let entry = entry.map_err(HummingbirdError::Io)?;
@@ -99,7 +99,7 @@ pub struct SessionMeta {
 }
 
 fn unix_now() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64
 }
 
 #[cfg(test)]
@@ -137,10 +137,11 @@ mod tests {
     #[test]
     fn prune_old_sessions() {
         let dir = TempDir::new().unwrap();
-        // Save a session then prune with 0 seconds threshold (prune everything)
         Session::new("Old").save(dir.path()).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        let pruned = Session::prune(dir.path(), 0).unwrap();
+        // Sleep so the session's created_at is strictly before unix_now() at prune time
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        // Prune sessions older than 1ms — everything saved >50ms ago qualifies
+        let pruned = Session::prune(dir.path(), 1).unwrap();
         assert_eq!(pruned, 1);
         assert!(Session::list(dir.path()).unwrap().is_empty());
     }

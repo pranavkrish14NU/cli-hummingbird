@@ -80,9 +80,9 @@ async fn main() {
                 }
                 SessionAction::Delete { id } => {
                     let path = workspace.join(".hummingbird/sessions").join(format!("{id}.json"));
-                    std::fs::remove_file(&path).map_err(hummingbird_common::HummingbirdError::Io)?;
-                    println!("Session {id} deleted.");
-                    Ok(())
+                    std::fs::remove_file(&path)
+                        .map_err(hummingbird_common::HummingbirdError::Io)
+                        .map(|_| println!("Session {id} deleted."))
                 }
             }
         }
@@ -104,16 +104,13 @@ async fn main() {
             let path = workspace.join(".hummingbird.toml");
             if path.exists() {
                 println!(".hummingbird.toml already exists.");
+                Ok(())
             } else {
-                let default = r#"include = ["**/*.rs", "**/*.toml"]
-exclude = ["target/**", ".git/**"]
-max_file_size_bytes = 1048576
-max_total_tokens = 64000
-"#;
-                std::fs::write(&path, default).map_err(hummingbird_common::HummingbirdError::Io)?;
-                println!("Created .hummingbird.toml");
+                let default = "include = [\"**/*.rs\", \"**/*.toml\"]\nexclude = [\"target/**\", \".git/**\"]\nmax_file_size_bytes = 1048576\nmax_total_tokens = 64000\n";
+                std::fs::write(&path, default)
+                    .map_err(hummingbird_common::HummingbirdError::Io)
+                    .map(|_| println!("Created .hummingbird.toml"))
             }
-            Ok(())
         }
     };
 

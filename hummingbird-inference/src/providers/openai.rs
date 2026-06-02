@@ -52,6 +52,7 @@ struct OpenAiResponse {
 struct OpenAiChoice {
     message: Option<OpenAiMessage>,
     delta: Option<OpenAiMessage>,
+    #[allow(dead_code)]
     finish_reason: Option<String>,
 }
 

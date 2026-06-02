@@ -17,6 +17,7 @@ pub struct Agent {
     pub system_prompt: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct AgentRunResult {
     pub final_response: String,
     pub iterations: u32,

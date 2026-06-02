@@ -1,5 +1,5 @@
 use hummingbird_agent::{Agent, AgentRunResult};
-use hummingbird_common::{GlobalConfig, HummingbirdError, Result};
+use hummingbird_common::{GlobalConfig, Result};
 use hummingbird_context::{ContextGatherer, ResolvedContextConfig};
 use hummingbird_inference::{OllamaClient, AnthropicClient, OpenAiClient};
 use hummingbird_tools::{ListDirectory, ReadFile, SearchFiles, ShellExec, ToolRegistry, WriteFile};

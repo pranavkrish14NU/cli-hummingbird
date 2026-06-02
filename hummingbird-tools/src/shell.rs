@@ -150,7 +150,7 @@ mod tests {
         #[cfg(unix)]
         let result = shell().execute(json!({"command": "sleep 10", "timeout_secs": 1})).await.unwrap();
         #[cfg(windows)]
-        let result = shell().execute(json!({"command": "timeout /t 10", "timeout_secs": 1})).await.unwrap();
+        let result = shell().execute(json!({"command": "powershell -c Start-Sleep 10", "timeout_secs": 1})).await.unwrap();
         assert!(result.is_error);
         assert!(result.output.contains("timed out"));
     }
