@@ -1,6 +1,7 @@
 mod cli;
 mod repl;
 mod runner;
+mod tui;
 
 use clap::Parser;
 use cli::{Cli, Commands, ConfigAction, SessionAction};
@@ -9,13 +10,63 @@ use hummingbird_common::GlobalConfig;
 use runner::RunConfig;
 use std::path::PathBuf;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[tokio::main]
 async fn main() {
-    let cli = Cli::parse();
     let workspace = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let global = load_config(&workspace);
 
-    let result = match cli.command {
+    // When invoked with no arguments → show trust check + welcome + REPL
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() == 1 {
+        let dir = workspace.to_string_lossy().to_string();
+        if !tui::run_trust_check(&dir) {
+            return;
+        }
+        let username = whoami::realname();
+        tui::show_welcome(
+            &username,
+            &global.model.model_name,
+            &global.model.provider,
+            &dir,
+            &format!("v{VERSION}"),
+        );
+        // Drop into the REPL
+        use hummingbird_inference::OllamaClient;
+        use hummingbird_tools::{
+            ListDirectory, ReadFile, SearchFiles, ShellExec, ToolRegistry, WriteFile,
+        };
+        use std::sync::Arc;
+        let ws = workspace.to_string_lossy().to_string();
+        let mut registry = ToolRegistry::new();
+        registry.register(ReadFile);
+        registry.register(WriteFile);
+        registry.register(ListDirectory);
+        registry.register(SearchFiles);
+        registry.register(ShellExec::new(&ws));
+        let client = Arc::new(OllamaClient::new(
+            global
+                .model
+                .base_url
+                .clone()
+                .unwrap_or_else(|| "http://localhost:11434".into()),
+        ));
+        let agent =
+            hummingbird_agent::Agent::new(client, Arc::new(registry), &global.model.model_name);
+        let mut r = repl::Repl::new(agent, &ws);
+        if let Err(e) = r.run().await {
+            eprintln!("Error: {e}");
+        }
+        return;
+    }
+
+    let cli = Cli::parse();
+
+    let result = match cli.command.unwrap_or_else(|| {
+        // No subcommand but args were present (e.g. --help was handled by clap already)
+        std::process::exit(0);
+    }) {
         Commands::Run {
             prompt,
             model,

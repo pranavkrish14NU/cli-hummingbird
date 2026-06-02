@@ -1,0 +1,4 @@
+include = ["**/*.rs", "**/*.toml"]
+exclude = ["target/**", ".git/**"]
+max_file_size_bytes = 1048576
+max_total_tokens = 64000

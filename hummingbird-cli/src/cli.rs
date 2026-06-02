@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn cli_parses_run_subcommand() {
         let cli = Cli::try_parse_from(["hummingbird", "run", "fix the bug"]).unwrap();
-        match cli.command {
+        match cli.command.unwrap() {
             Commands::Run { prompt, .. } => assert_eq!(prompt, "fix the bug"),
             _ => panic!("expected run"),
         }
@@ -109,7 +109,7 @@ mod tests {
             "5",
         ])
         .unwrap();
-        match cli.command {
+        match cli.command.unwrap() {
             Commands::Run {
                 model,
                 provider,
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn cli_parses_session_list() {
         let cli = Cli::try_parse_from(["hummingbird", "session", "list"]).unwrap();
-        match cli.command {
+        match cli.command.unwrap() {
             Commands::Session {
                 action: SessionAction::List,
             } => {}
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn cli_parses_session_resume() {
         let cli = Cli::try_parse_from(["hummingbird", "session", "resume", "abc123"]).unwrap();
-        match cli.command {
+        match cli.command.unwrap() {
             Commands::Session {
                 action: SessionAction::Resume { id },
             } => {
