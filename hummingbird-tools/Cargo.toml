@@ -1,0 +1,17 @@
+[package]
+name = "hummingbird-tools"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hummingbird-common = { path = "../hummingbird-common" }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+walkdir = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+tempfile = "3"

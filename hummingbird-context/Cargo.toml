@@ -1,0 +1,13 @@
+[package]
+name = "hummingbird-context"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hummingbird-common = { path = "../hummingbird-common" }
+glob = { workspace = true }
+walkdir = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

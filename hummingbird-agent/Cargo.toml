@@ -1,0 +1,18 @@
+[package]
+name = "hummingbird-agent"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hummingbird-common = { path = "../hummingbird-common" }
+hummingbird-context = { path = "../hummingbird-context" }
+hummingbird-inference = { path = "../hummingbird-inference" }
+hummingbird-tools = { path = "../hummingbird-tools" }
+hummingbird-forge = { path = "../hummingbird-forge" }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -1,0 +1,23 @@
+[package]
+name = "hummingbird-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "hummingbird"
+path = "src/main.rs"
+
+[dependencies]
+hummingbird-common = { path = "../hummingbird-common" }
+hummingbird-agent = { path = "../hummingbird-agent" }
+hummingbird-context = { path = "../hummingbird-context" }
+hummingbird-inference = { path = "../hummingbird-inference" }
+hummingbird-tools = { path = "../hummingbird-tools" }
+hummingbird-forge = { path = "../hummingbird-forge" }
+tokio = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -1,0 +1,14 @@
+[package]
+name = "hummingbird-forge"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hummingbird-common = { path = "../hummingbird-common" }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

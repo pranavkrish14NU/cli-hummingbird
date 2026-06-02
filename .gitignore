@@ -1,0 +1,6 @@
+/target
+.forge-commit-ready
+.forge/project-id
+.claude/hooks/
+*.swp
+.DS_Store
