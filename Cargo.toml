@@ -24,7 +24,7 @@ thiserror = "2"
 anyhow = "1"
 async-trait = "0.1"
 futures = "0.3"
-toml = "0.8"
+toml = { version = "0.8", features = ["display"] }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 regex = "1"
 walkdir = "2"
