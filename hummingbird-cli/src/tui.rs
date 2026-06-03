@@ -8,40 +8,50 @@ use crossterm::{
 use std::io::{stdout, Write};
 
 // ── Opsera brand palette ──────────────────────────────────────────────────────
-const PURPLE: Color = Color::Rgb {
+const PURPLE_DEEP: Color = Color::Rgb {
+    r: 75,
+    g: 55,
+    b: 175,
+}; // dark body
+const PURPLE_MID: Color = Color::Rgb {
+    r: 108,
+    g: 87,
+    b: 210,
+}; // main body
+const PURPLE_LITE: Color = Color::Rgb {
+    r: 160,
+    g: 148,
+    b: 230,
+}; // wing tips / tail
+const GOLD: Color = Color::Rgb {
+    r: 245,
+    g: 180,
+    b: 45,
+}; // wing highlight
+const GOLD_LITE: Color = Color::Rgb {
+    r: 252,
+    g: 210,
+    b: 80,
+}; // bright gold
+const BORDER_PUR: Color = Color::Rgb {
     r: 124,
     g: 58,
     b: 237,
-};
-const PURPLE_DIM: Color = Color::Rgb {
-    r: 91,
-    g: 33,
-    b: 182,
-};
-const GOLD: Color = Color::Rgb {
+}; // UI borders
+const GOLD_UI: Color = Color::Rgb {
     r: 245,
     g: 158,
     b: 11,
-};
+}; // UI gold
 const GOLD_BRIGHT: Color = Color::Rgb {
     r: 252,
     g: 211,
     b: 77,
-};
+}; // UI bright gold
 const TEAL: Color = Color::Rgb {
     r: 20,
     g: 184,
     b: 166,
-};
-const TEAL_DARK: Color = Color::Rgb {
-    r: 15,
-    g: 118,
-    b: 110,
-};
-const GREEN_WING: Color = Color::Rgb {
-    r: 52,
-    g: 211,
-    b: 153,
 };
 const WHITE: Color = Color::Rgb {
     r: 240,
@@ -62,7 +72,7 @@ fn rgb(c: Color) -> String {
     }
 }
 
-fn ansi_line(out: &mut impl Write, code: &str, text: &str) {
+fn ansi_write(out: &mut impl Write, code: &str, text: &str) {
     let _ = write!(out, "\x1b[{}m{}\x1b[0m", code, text);
 }
 
@@ -72,11 +82,11 @@ fn box_row(out: &mut impl Write, w: usize, text: &str, color: Color, bold: bool)
     let _ = write!(
         out,
         "\x1b[{}m║\x1b[0m{}\x1b[{}m{:<inner$}\x1b[0m\x1b[{}m║\x1b[0m\n",
-        rgb(PURPLE),
+        rgb(BORDER_PUR),
         b,
         rgb(color),
         text,
-        rgb(PURPLE),
+        rgb(BORDER_PUR),
         inner = inner
     );
 }
@@ -97,71 +107,92 @@ fn two_col(
     let _ = write!(
         out,
         "\x1b[{}m║\x1b[0m{}\x1b[{}m{}\x1b[0m\x1b[{}m│\x1b[{}m{}\x1b[0m\x1b[{}m║\x1b[0m\n",
-        rgb(PURPLE),
+        rgb(BORDER_PUR),
         b,
         rgb(lc),
         l,
-        rgb(PURPLE),
+        rgb(BORDER_PUR),
         rgb(rc),
         r,
-        rgb(PURPLE)
+        rgb(BORDER_PUR)
     );
 }
 
-// ── Hummingbird pixel art ─────────────────────────────────────────────────────
-// Each row: (beak segment, body segment, body color)
-// Beak rendered in GOLD, body in the given color.
-fn bird_lines() -> &'static [(&'static str, &'static str, Color)] {
-    &[
-        ("                 ", "  ▄▄████████▄▄              ", TEAL),
-        ("                 ", "▄█░░░░░░░░░░░░▀▄            ", TEAL),
-        ("─────────────────", "░░(◉)░░░░░░░░░░░█           ", TEAL),
-        ("                 ", "▀█░░░░░░░░░░░░░░░▀▄         ", TEAL),
-        (
-            "      ▄▄▄▄▄▄▄▄▄▄▄",
-            "█░░░░░░░░░░░░░░░░░░▀▄      ",
-            TEAL_DARK,
-        ),
-        (
-            "     █           ",
-            "░░░░░░░░░░░░░░░░░░░░░█      ",
-            TEAL_DARK,
-        ),
-        (
-            "      ▀▀▀▀▀▀▀▀▀▀▀",
-            "█░░░░░░░░░░░░░░░░░░▄▀      ",
-            GREEN_WING,
-        ),
-        (
-            "                 ",
-            "  ▀▀█░░░░░░░░░░░░▄▀         ",
-            GREEN_WING,
-        ),
-        (
-            "                 ",
-            "     ▀▀███░░░░███▀▀         ",
-            GREEN_WING,
-        ),
-        (
-            "                 ",
-            "        ██░░░░██            ",
-            TEAL_DARK,
-        ),
-        (
-            "                 ",
-            "        ██    ██            ",
-            TEAL_DARK,
-        ),
-        (
-            "                 ",
-            "       ██      ██           ",
-            PURPLE_DIM,
-        ),
-        (
-            "                 ",
-            "      ██        ██          ",
-            PURPLE_DIM,
-        ),
+// ── Hummingbird logo art ──────────────────────────────────────────────────────
+// Low-poly geometric style matching the Opsera hummingbird.
+// Each row = Vec of (&str segment, Color).
+// Bird faces right with wings angled up-left, tail down-left.
+fn bird_rows() -> Vec<Vec<(&'static str, Color)>> {
+    vec![
+        // Upper gold wing — sweeping up
+        vec![("                 ◢▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲", GOLD_LITE)],
+        vec![("              ◢▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓◣", GOLD)],
+        vec![("           ◢▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓◣", GOLD)],
+        // Gold wing meets purple body
+        vec![
+            ("        ◢▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓", GOLD),
+            ("████████████▓▓▓◣  ", PURPLE_MID),
+        ],
+        // Beak row — gold beak tip, purple body
+        vec![
+            ("      ◢▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓", GOLD),
+            ("██████████████████◣", PURPLE_DEEP),
+            ("──────►", GOLD_LITE),
+        ],
+        // Gold lower wing start
+        vec![
+            ("      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓", GOLD),
+            ("██████████████████████", PURPLE_DEEP),
+        ],
+        vec![
+            ("       ◥▓▓▓▓▓▓▓▓▓▓▓▓▓◤", GOLD),
+            ("████████████████████████ ", PURPLE_MID),
+        ],
+        // Pure purple body — widest point
+        vec![
+            ("              ", DIM),
+            ("████████████████████████████████", PURPLE_MID),
+        ],
+        vec![
+            ("               ", DIM),
+            ("██████████████████████████████", PURPLE_MID),
+        ],
+        // Narrowing lower body
+        vec![
+            ("                ", DIM),
+            ("████████████████████████████", PURPLE_MID),
+        ],
+        vec![
+            ("                  ", DIM),
+            ("████████████████████████", PURPLE_LITE),
+        ],
+        // Tail fans out
+        vec![
+            ("                    ", DIM),
+            ("████████████████████", PURPLE_LITE),
+        ],
+        vec![
+            ("                      ", DIM),
+            ("████████████████", PURPLE_LITE),
+        ],
+        vec![
+            ("                       ", DIM),
+            ("██████", PURPLE_LITE),
+            ("    ", DIM),
+            ("██████", PURPLE_DEEP),
+        ],
+        vec![
+            ("                      ", DIM),
+            ("█████", PURPLE_LITE),
+            ("      ", DIM),
+            ("█████", PURPLE_DEEP),
+        ],
+        vec![
+            ("                     ", DIM),
+            ("████", PURPLE_LITE),
+            ("        ", DIM),
+            ("████", PURPLE_DEEP),
+        ],
     ]
 }
 
@@ -191,15 +222,15 @@ pub fn run_trust_check(dir: &str) -> bool {
         .map(|(w, _)| w as usize)
         .unwrap_or(80)
         .min(76);
+    let inner = w - 2;
 
-    // Static frame
-    ansi_line(
+    ansi_write(
         &mut out,
-        &rgb(PURPLE),
+        &rgb(BORDER_PUR),
         &format!("╔{}╗\n", "═".repeat(w - 2)),
     );
     box_row(&mut out, w, "", DIM, false);
-    box_row(&mut out, w, "  Accessing workspace:", GOLD, true);
+    box_row(&mut out, w, "  Accessing workspace:", GOLD_UI, true);
     box_row(&mut out, w, "", DIM, false);
     box_row(&mut out, w, &format!("  {}", dir), WHITE, false);
     box_row(&mut out, w, "", DIM, false);
@@ -233,9 +264,9 @@ pub fn run_trust_check(dir: &str) -> bool {
         false,
     );
     box_row(&mut out, w, "", DIM, false);
-    ansi_line(
+    ansi_write(
         &mut out,
-        &rgb(PURPLE),
+        &rgb(BORDER_PUR),
         &format!("╠{}╣\n", "═".repeat(w - 2)),
     );
     out.flush().unwrap();
@@ -243,7 +274,6 @@ pub fn run_trust_check(dir: &str) -> bool {
     let options = ["  ▶  Yes, I trust this folder", "  ▶  No, exit"];
     let mut selected = 0usize;
     let option_row_start = 13u16;
-    let inner = w - 2;
 
     loop {
         for (i, opt) in options.iter().enumerate() {
@@ -253,12 +283,12 @@ pub fn run_trust_check(dir: &str) -> bool {
                 terminal::Clear(ClearType::CurrentLine)
             )
             .unwrap();
-            let _ = write!(out, "\x1b[{}m║\x1b[0m", rgb(PURPLE));
+            let _ = write!(out, "\x1b[{}m║\x1b[0m", rgb(BORDER_PUR));
             if i == selected {
                 let _ = write!(
                     out,
                     "\x1b[1m\x1b[{}m{:<inner$}\x1b[0m",
-                    rgb(GOLD),
+                    rgb(GOLD_UI),
                     opt,
                     inner = inner
                 );
@@ -271,26 +301,25 @@ pub fn run_trust_check(dir: &str) -> bool {
                     inner = inner
                 );
             }
-            let _ = write!(out, "\x1b[{}m║\x1b[0m\n", rgb(PURPLE));
+            let _ = write!(out, "\x1b[{}m║\x1b[0m\n", rgb(BORDER_PUR));
         }
-
-        ansi_line(
+        ansi_write(
             &mut out,
-            &rgb(PURPLE),
+            &rgb(BORDER_PUR),
             &format!("╠{}╣\n", "═".repeat(w - 2)),
         );
         let _ = write!(
             out,
             "\x1b[{}m║\x1b[{}m{:<inner$}\x1b[0m\x1b[{}m║\x1b[0m\n",
-            rgb(PURPLE),
+            rgb(BORDER_PUR),
             rgb(DIM),
             "  Enter to confirm  ·  ↑↓ to move  ·  Esc to cancel",
-            rgb(PURPLE),
+            rgb(BORDER_PUR),
             inner = inner
         );
-        ansi_line(
+        ansi_write(
             &mut out,
-            &rgb(PURPLE),
+            &rgb(BORDER_PUR),
             &format!("╚{}╝\n", "═".repeat(w - 2)),
         );
         out.flush().unwrap();
@@ -326,17 +355,17 @@ pub fn show_welcome(username: &str, model: &str, provider: &str, dir: &str, vers
     execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0)).unwrap();
 
     let (term_w, _) = terminal::size().unwrap_or((120, 40));
-    let lw: usize = 56;
+    let lw: usize = 58;
     let rw: usize = (term_w as usize).saturating_sub(lw + 3).min(50);
 
     // Top border
-    ansi_line(
+    ansi_write(
         &mut out,
-        &rgb(PURPLE),
+        &rgb(BORDER_PUR),
         &format!("╔{}╤{}╗\n", "═".repeat(lw), "═".repeat(rw)),
     );
 
-    // Header
+    // Header row
     two_col(
         &mut out,
         lw,
@@ -345,17 +374,17 @@ pub fn show_welcome(username: &str, model: &str, provider: &str, dir: &str, vers
         GOLD_BRIGHT,
         true,
         "  What's new",
-        GOLD,
+        GOLD_UI,
     );
 
     // Divider
-    ansi_line(
+    ansi_write(
         &mut out,
-        &rgb(PURPLE),
+        &rgb(BORDER_PUR),
         &format!("╠{}╪{}╣\n", "═".repeat(lw), "═".repeat(rw)),
     );
 
-    // Welcome message
+    // Welcome
     two_col(
         &mut out,
         lw,
@@ -368,34 +397,27 @@ pub fn show_welcome(username: &str, model: &str, provider: &str, dir: &str, vers
     );
     two_col(&mut out, lw, rw, "", DIM, false, "", DIM);
 
-    // Bird + changelog
-    let bird = bird_lines();
+    // Bird + changelog rows
+    let bird = bird_rows();
     let total = bird.len().max(CHANGELOG.len() + 1);
 
     for i in 0..total {
-        // Left: bird art (beak in gold, body in its color)
-        let _ = write!(out, "\x1b[{}m║\x1b[0m", rgb(PURPLE));
+        // Left panel: bird art
+        let _ = write!(out, "\x1b[{}m║\x1b[0m", rgb(BORDER_PUR));
 
-        if let Some((beak, body, color)) = bird.get(i) {
-            let beak_part = format!("  {}", beak);
-            let body_part = format!(
-                "{:<width$}",
-                body,
-                width = lw.saturating_sub(beak_part.chars().count())
-            );
-            let _ = write!(
-                out,
-                "\x1b[{}m{}\x1b[0m\x1b[{}m{}\x1b[0m",
-                rgb(GOLD),
-                beak_part,
-                rgb(*color),
-                body_part
-            );
-        } else {
-            let _ = write!(out, "{:<lw$}", "", lw = lw);
+        let mut left_len = 0usize;
+        if let Some(segments) = bird.get(i) {
+            for (text, color) in segments {
+                let _ = write!(out, "\x1b[{}m{}\x1b[0m", rgb(*color), text);
+                left_len += text.chars().count();
+            }
+        }
+        // Pad to lw
+        if left_len < lw {
+            let _ = write!(out, "{}", " ".repeat(lw - left_len));
         }
 
-        // Right: changelog entry
+        // Right panel: changelog
         let right_str = if i == 0 {
             String::new()
         } else if let Some(entry) = CHANGELOG.get(i - 1) {
@@ -407,15 +429,15 @@ pub fn show_welcome(username: &str, model: &str, provider: &str, dir: &str, vers
         let _ = write!(
             out,
             "\x1b[{}m│\x1b[{}m{:<rw$}\x1b[0m\x1b[{}m║\x1b[0m\n",
-            rgb(PURPLE),
+            rgb(BORDER_PUR),
             rgb(DIM),
             right_str,
-            rgb(PURPLE),
+            rgb(BORDER_PUR),
             rw = rw
         );
     }
 
-    // Spacer + branding
+    // Spacer + Opsera branding
     two_col(&mut out, lw, rw, "", DIM, false, "", DIM);
     two_col(
         &mut out,
@@ -450,16 +472,17 @@ pub fn show_welcome(username: &str, model: &str, provider: &str, dir: &str, vers
     two_col(&mut out, lw, rw, "", DIM, false, "", DIM);
 
     // Bottom border
-    ansi_line(
+    ansi_write(
         &mut out,
-        &rgb(PURPLE),
+        &rgb(BORDER_PUR),
         &format!("╚{}╧{}╝\n\n", "═".repeat(lw), "═".repeat(rw)),
     );
 
-    // Prompt hint line
+    // Prompt hint
     let _ = write!(out,
         "\x1b[{}m▶ \x1b[0m\x1b[1m\x1b[{}mauto mode on\x1b[0m  \x1b[{}m·  type a task or /help\x1b[0m\n\n",
-        rgb(GOLD), rgb(PURPLE), rgb(DIM));
+        rgb(GOLD_UI), rgb(BORDER_PUR), rgb(DIM)
+    );
 
     out.flush().unwrap();
 }
