@@ -190,10 +190,20 @@ async fn main() {
 }
 
 fn load_config(workspace: &std::path::Path) -> GlobalConfig {
-    let path = workspace.join(".hummingbird.toml");
-    if let Ok(content) = std::fs::read_to_string(&path) {
+    // 1. Project-level config takes priority
+    let project_cfg = workspace.join(".hummingbird.toml");
+    if let Ok(content) = std::fs::read_to_string(&project_cfg) {
         if let Ok(cfg) = toml::from_str(&content) {
             return cfg;
+        }
+    }
+    // 2. Fall back to global user config (~/.hummingbird.toml)
+    if let Some(home) = dirs_next::home_dir() {
+        let global_cfg = home.join(".hummingbird.toml");
+        if let Ok(content) = std::fs::read_to_string(&global_cfg) {
+            if let Ok(cfg) = toml::from_str(&content) {
+                return cfg;
+            }
         }
     }
     GlobalConfig::default()
